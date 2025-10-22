@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>JSON数据对比工具</title>
+    <style>
+        *{            
+            box-sizing: border-box;
+        }
+        body{
+            margin: 0 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+        .container .data-inputs{
+            display: flex;
+            gap: 20px;
+            width: calc(100% - 500px);
+        }
+        .container .data-compare {            
+            width: 49%;
+        }
+        textarea {
+            width: 100%;
+            height: calc(100vh - 200px);
+            padding: 10px;
+            font-family: monospace;
+            box-sizing: border-box;
+        }
+        #missingFields {
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            height: calc(100vh - 200px);
+            width: 500px;
+            overflow: auto;
+        }
+        .btn-box {
+            text-align: right;
+        }
+        button {
+            padding: 20px 20px;
+            font-size: 20px;
+            cursor: pointer;
+            margin: 0;
+            width: 300px;
+            margin-top: 20px;
+            border: none;
+            background: #000;
+            color: #fff;
+            border-radius: 5px;
+        }
+        .missing-field {
+            color: #c00;
+            font-family: monospace;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="data-inputs">
+            <div class="data-compare">
+                <h3>JSON数据1（基准数据）</h3>
+                <textarea id="json1" style="resize: none;" placeholder='输入基准JSON数据，例如：{"name": "Alice", "age": 30, "address": {"city": "Beijing"}}'></textarea>
+            </div>
+            <div class="data-compare">
+                <h3>JSON数据2（对比数据）</h3>
+                <textarea id="json2" style="resize: none;" placeholder='输入对比JSON数据，例如：{"name": "Bob", "address": {"street": "Main St"}}'></textarea>
+            </div>
+            
+        </div>
+            
+        <div id="result">
+            <h3>对比结果（右侧缺失字段）</h3>
+            <div id="missingFields"></div>
+        </div>
+    </div>
+    <div class="btn-box">
+        <button onclick="compareJson()">比较JSON数据</button>
+    </div>
+
+    <script>
+        function compareJson() {
+            try {
+                const json1Input = document.getElementById('json1').value.trim() || '{}';
+                const json2Input = document.getElementById('json2').value.trim() || '{}';
+                
+                const baseData = JSON.parse(json1Input);
+                const compareData = JSON.parse(json2Input);
+                
+                const missingFields = findMissingFields(baseData, compareData);
+                
+                displayResults(missingFields);
+            } catch (error) {
+                document.getElementById('missingFields').innerHTML = 
+                    `<div class="missing-field">JSON解析错误: ${error.message}</div>`;
+            }
+        }
+        
+        function findMissingFields(base, target, path = '') {
+            let missing = [];
+            
+            for (const key in base) {
+                if (Object.hasOwnProperty.call(base, key)) {
+                    const currentPath = path ? `${path}.${key}` : key;
+                    if (!target || !target.hasOwnProperty(key)) {
+                        missing.push(currentPath);
+                    } 
+                    else if (typeof base[key] === 'object' && base[key] !== null) {
+                        missing = missing.concat(
+                            findMissingFields(
+                                base[key], 
+                                target[key], 
+                                currentPath
+                            )
+                        );
+                    }
+                }
+            }
+            
+            return missing;
+        }
+        function displayResults(missingFields) {
+            const resultContainer = document.getElementById('missingFields');
+            
+            if (missingFields.length === 0) {
+                resultContainer.innerHTML = '<div>右侧数据包含基准数据的所有字段</div>';
+                return;
+            }
+            
+            resultContainer.innerHTML = missingFields
+                .map(field => `<div class="missing-field">${field}</div>`)
+                .join('');
+        }
+    </script>
+</body>
+</html>
